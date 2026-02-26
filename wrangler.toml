@@ -1,0 +1,12 @@
+name = "api-reverse-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# 自定义域名（取消注释并替换为你的域名）
+# [[routes]]
+# pattern = "your-domain.com/*"
+# zone_name = "your-domain.com"
+
+# 区域放置（取消注释以指定 Worker 运行区域，用于绕过 API 地域限制）
+# [placement]
+# region = "aws:us-east-1"
