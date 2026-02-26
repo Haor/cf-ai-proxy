@@ -46,8 +46,6 @@ const API_DOCS: Record<string, { auth: string; example_endpoint: string; note?: 
   '/telegram':    { auth: 'Token in URL path', example_endpoint: '/bot{token}/sendMessage' },
 };
 
-const UPSTREAM_TIMEOUT_MS = 30_000;
-
 const STRIPPED_REQUEST_HEADERS = new Set([
   'host',
   'cf-connecting-ip',
@@ -405,12 +403,12 @@ export default {
           probeUpstream(prefix.slice(1), target)
         )
       );
-      return Response.json(results, { headers: CORS_HEADERS });
+      return Response.json(results, { headers: { ...CORS_HEADERS, 'Cache-Control': 'public, max-age=10' } });
     }
 
     const match = extractPrefixAndRest(pathname);
     if (!match) {
-      return new Response('Not Found', { status: 404 });
+      return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
     }
 
     const [prefix, rest] = match;
@@ -421,18 +419,14 @@ export default {
         method: request.method,
         headers: buildForwardHeaders(request.headers),
         body: request.body,
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
 
       return new Response(response.body, {
         status: response.status,
         headers: buildResponseHeaders(response.headers),
       });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'TimeoutError') {
-        return new Response('Gateway Timeout', { status: 504 });
-      }
-      return new Response('Internal Server Error', { status: 500 });
+    } catch {
+      return new Response('Bad Gateway', { status: 502, headers: CORS_HEADERS });
     }
   },
 };

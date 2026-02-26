@@ -190,7 +190,8 @@ client = OpenAI(
 ```
 
 - 请求头采用**黑名单机制**：只剥离 `host`、`cf-*`、`x-forwarded-*` 等代理/内部头，其余全部透传
-- 上游请求设有 30 秒超时，超时返回 504
+- 无人为超时限制，依赖 Cloudflare Workers 运行时的原生行为（wall-clock 无上限，只要客户端保持连接）
+- `/api/status` 响应带 10 秒缓存，避免短时间内重复触发大量探测请求
 - 响应附加 `X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy` 安全头
 
 ## License
