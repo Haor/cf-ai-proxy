@@ -200,7 +200,7 @@ header p{color:var(--dim);font-size:.82rem;margin-top:.3rem}
 <div class="container">
   <header>
     <h1>API Reverse Proxy</h1>
-    <p>${Object.keys(API_MAPPING).length} endpoints available</p>
+    <p>${Object.keys(API_MAPPING).length} endpoints available &middot; <a href="https://github.com/Haor/cf-ai-proxy" target="_blank" style="color:var(--accent);text-decoration:none">GitHub</a></p>
     <div class="node-info" id="nodeInfo"><span class="dot"></span><span id="nodeText">detecting...</span></div>
   </header>
 
