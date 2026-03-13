@@ -331,9 +331,11 @@ function copyExample() {
   copyText(code, btn);
 }
 
-fetch("/debug").then(r => r.json()).then(d => {
-  const loc = [d.outbound_city, d.outbound_country].filter(Boolean).join(", ");
-  document.getElementById("nodeText").textContent = loc ? "Outbound: " + loc : "Node: " + (d.entry_colo || "unknown");
+fetch("/debug").then(async r => {
+  const d = await r.json();
+  const entry = d.entry_colo || "unknown";
+  const placement = r.headers.get("cf-placement") || "unknown";
+  document.getElementById("nodeText").textContent = "Entry: " + entry + " · Placement: " + placement;
 }).catch(() => {
   document.getElementById("nodeText").textContent = "unable to detect";
 });
@@ -381,20 +383,9 @@ export default {
 
     if (pathname === '/debug') {
       const cf = (request as any).cf;
-      const placement = request.headers.get('cf-placement');
-      let outbound = null;
-      try {
-        const ipRes = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(5000) });
-        outbound = await ipRes.json();
-      } catch {}
       return Response.json({
-        placement,
         entry_colo: cf?.colo,
-        outbound_ip: (outbound as any)?.ip,
-        outbound_city: (outbound as any)?.city,
-        outbound_region: (outbound as any)?.region,
-        outbound_country: (outbound as any)?.country,
-      }, { headers: CORS_HEADERS });
+      }, { headers: { ...CORS_HEADERS, 'Cache-Control': 'public, max-age=10' } });
     }
 
     if (pathname === '/api/status') {
