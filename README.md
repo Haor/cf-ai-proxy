@@ -31,7 +31,7 @@
 | `/novita` | api.novita.ai | Bearer token |
 | `/portkey` | api.portkey.ai | Bearer token |
 | `/zenmux` | zenmux.ai/api | Bearer token |
-| `/cerebras` | api.cerebras.ai | Bearer token |
+| `/fal` | queue.fal.run | Authorization: Key |
 | `/sambanova` | api.sambanova.ai | Bearer token |
 | `/hyperbolic` | api.hyperbolic.xyz | Bearer token |
 | `/discord` | discord.com/api | Bot token |
