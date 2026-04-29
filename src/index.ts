@@ -16,8 +16,8 @@ const API_MAPPING: Record<string, string> = {
   '/portkey': 'https://api.portkey.ai',
   '/zenmux': 'https://zenmux.ai/api',
   '/fal': 'https://queue.fal.run',
-  '/sambanova': 'https://api.sambanova.ai',
-  '/hyperbolic': 'https://api.hyperbolic.xyz',
+  '/brave': 'https://api.search.brave.com',
+  '/github': 'https://github.com',
   '/discord': 'https://discord.com/api',
   '/telegram': 'https://api.telegram.org',
 };
@@ -40,8 +40,8 @@ const API_DOCS: Record<string, { auth: string; example_endpoint: string; note?: 
   '/portkey':     { auth: 'Authorization: Bearer ... + x-portkey-api-key', example_endpoint: '/v1/chat/completions' },
   '/zenmux':      { auth: 'Authorization: Bearer ...', example_endpoint: '/v1/chat/completions', note: 'Model format: provider/model-name' },
   '/fal':         { auth: 'Authorization: Key ...', example_endpoint: '/fal-ai/flux/schnell', note: 'Queue API via queue.fal.run; supports X-Fal-* headers' },
-  '/sambanova':   { auth: 'Authorization: Bearer ...', example_endpoint: '/v1/chat/completions', note: 'High-speed inference, free tier available' },
-  '/hyperbolic':  { auth: 'Authorization: Bearer ...', example_endpoint: '/v1/chat/completions', note: 'Open-source models (Llama, Qwen, etc.)' },
+  '/brave':       { auth: 'X-Subscription-Token: ...', example_endpoint: '/res/v1/web/search?q=cloudflare+workers', note: 'Brave Search API' },
+  '/github':      { auth: 'None', example_endpoint: '/https://github.com/owner/repo/releases/download/v1.0/file.zip', note: 'GitHub release, archive, and raw file acceleration' },
   '/discord':     { auth: 'Authorization: Bot ...', example_endpoint: '/v10/channels/{id}/messages' },
   '/telegram':    { auth: 'Token in URL path', example_endpoint: '/bot{token}/sendMessage' },
 };
@@ -118,6 +118,37 @@ function buildResponseHeaders(upstreamHeaders: Headers): Headers {
     headers.set(key, value);
   }
   return headers;
+}
+
+function buildGithubProxyUrl(pathname: string, search: string): string | null {
+  try {
+    const rawTarget = decodeURIComponent(pathname.slice('/github'.length).replace(/^\/+/, ''));
+    if (!rawTarget) return null;
+
+    const normalizedTarget = rawTarget.startsWith('http://') || rawTarget.startsWith('https://')
+      ? rawTarget
+      : `https://${rawTarget}`;
+
+    const targetUrl = new URL(normalizedTarget);
+    const allowedHosts = new Set([
+      'github.com',
+      'raw.githubusercontent.com',
+      'gist.githubusercontent.com',
+      'githubusercontent.com',
+      'objects.githubusercontent.com',
+      'release-assets.githubusercontent.com',
+      'codeload.github.com',
+    ]);
+
+    if (targetUrl.protocol !== 'https:' || !allowedHosts.has(targetUrl.hostname)) {
+      return null;
+    }
+
+    targetUrl.search = search;
+    return targetUrl.toString();
+  } catch {
+    return null;
+  }
 }
 
 async function probeUpstream(name: string, target: string): Promise<{ name: string; target: string; ok: boolean; latency_ms: number | null; status: number | null }> {
@@ -395,6 +426,29 @@ export default {
         )
       );
       return Response.json(results, { headers: { ...CORS_HEADERS, 'Cache-Control': 'public, max-age=10' } });
+    }
+
+    if (pathname === '/github' || pathname.startsWith('/github/')) {
+      const targetUrl = buildGithubProxyUrl(pathname, url.search);
+      if (!targetUrl) {
+        return new Response('Bad GitHub URL', { status: 400, headers: CORS_HEADERS });
+      }
+
+      try {
+        const response = await fetch(targetUrl, {
+          method: request.method,
+          headers: buildForwardHeaders(request.headers),
+          body: request.body,
+          redirect: 'follow',
+        });
+
+        return new Response(response.body, {
+          status: response.status,
+          headers: buildResponseHeaders(response.headers),
+        });
+      } catch {
+        return new Response('Bad Gateway', { status: 502, headers: CORS_HEADERS });
+      }
     }
 
     const match = extractPrefixAndRest(pathname);

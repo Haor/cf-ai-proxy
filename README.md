@@ -32,8 +32,8 @@
 | `/portkey` | api.portkey.ai | Bearer token |
 | `/zenmux` | zenmux.ai/api | Bearer token |
 | `/fal` | queue.fal.run | Authorization: Key |
-| `/sambanova` | api.sambanova.ai | Bearer token |
-| `/hyperbolic` | api.hyperbolic.xyz | Bearer token |
+| `/brave` | api.search.brave.com | X-Subscription-Token |
+| `/github` | github.com / raw.githubusercontent.com | 无 |
 | `/discord` | discord.com/api | Bot token |
 | `/telegram` | api.telegram.org | Token in URL |
 
